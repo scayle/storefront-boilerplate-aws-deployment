@@ -1,0 +1,304 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Storefront Boilerplate ECS Cluster
+
+Parameters:
+  AWSAccountName:
+    Description: The AWS account name
+    Type: String
+
+Resources:
+  # ECS Cluster
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref AWS::StackName
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  # Security Groups
+  ElastiCacheSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName:
+        Fn::Sub: ${AWS::StackName}-sg-ec
+      GroupDescription: Storefront Boilerplate ElastiCache Security Group
+      SecurityGroupIngress:
+        - SourceSecurityGroupId:
+            Ref: ServiceSecurityGroup
+          IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+      VpcId:
+        Ref: VpcId # TODO: VPC???
+  ServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName:
+        Fn::Sub: ${AWS::StackName}-sg-ecs
+      GroupDescription: Storefront Boilerplate Service Security Group
+      SecurityGroupIngress:
+        - Description: Access from the LB to ECS
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId:
+            Ref: LoadBalancerSecurityGroup
+      VpcId:
+        Ref: VpcId # TODO: VPC???
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName:
+        Fn::Sub: ${AWS::StackName}-sg-lb
+      GroupDescription: Storefront Boilerplate Load Balancer Security Group
+      VpcId:
+        Ref: VpcId # TODO: VPC???
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+  # Service Secret
+  Secret:
+    Type: 'AWS::SecretsManager::Secret'
+    Properties:
+      Name: !Ref AWS::StackName
+      Description: 'Storefront Boilerplate Secrets'
+      # TODO: Fill in secrets
+      SecretString: |
+        {}
+
+  # Load Balancer Setup
+  LoadBalancerListenerSecure:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn:
+            Ref: LoadBalancerTargetGroup
+      LoadBalancerArn:
+        Ref: LoadBalancerService
+      Port: 443
+      Protocol: HTTPS
+  LoadBalancerService:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name:
+        Ref: AWS::StackName
+      Scheme: internet-facing
+      SecurityGroups:
+        - Ref: LoadBalancerSecurityGroup
+      Subnets:
+        Ref: PublicSubnetIds # TODO: Public Subnet ID?
+  LoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn:
+      - LoadBalancerService
+    Properties:
+      Port: 80
+      Protocol: HTTP
+      Matcher:
+        HttpCode: 200-299
+      HealthCheckIntervalSeconds: 10
+      HealthCheckTimeoutSeconds: 5
+      HealthCheckPort: traffic-port
+      HealthCheckPath: /api/up
+      HealthCheckProtocol: HTTP
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      TargetType: ip
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 30
+      VpcId:
+        Ref: VpcId # TODO: VPC?
+
+  # ElastiCache
+  ElastiCacheService:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      AutomaticFailoverEnabled: false
+      CacheNodeType: cache.t4g.small
+      CacheSubnetGroupName:
+        Ref: ElastiCacheSubnetGroup
+      Engine: redis
+      EngineVersion: 7.0
+      MultiAZEnabled: false
+      NumCacheClusters: 1
+      PreferredMaintenanceWindow: tue:02:00-tue:04:00
+      ReplicationGroupDescription:
+        Ref: AWS::StackName
+      ReplicationGroupId:
+        Ref: AWS::StackName
+      SecurityGroupIds:
+        - Ref: ElastiCacheSecurityGroup
+      SnapshotRetentionLimit: 1
+      SnapshotWindow: 01:00-02:00
+      SnapshottingClusterId:
+        Fn::Sub: ${AWS::StackName}-001
+
+  ElastiCacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description:
+        Ref: AWS::StackName
+      SubnetIds:
+        Ref: SubnetIds # TODO: Subnet Ids?
+
+  # Service
+  CloudwatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Ref: AWS::StackName
+      RetentionInDays: 14
+  EcsService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster:
+        Ref: Cluster
+      LaunchType: FARGATE
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - Ref: ServiceSecurityGroup
+          Subnets:
+            Ref: SubnetIds # TODO: Subnet IDs???
+      LoadBalancers:
+        - ContainerName: storefront
+          ContainerPort: '80'
+          TargetGroupArn:
+            Ref: LoadBalancerTargetGroup
+      TaskDefinition:
+        Ref: TaskDefinition
+      PropagateTags: SERVICE
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub ${AWS::StackName}
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      Cpu: 512
+      Memory: 1024
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn:
+        Ref: TaskExecutionRole
+      TaskRoleArn:
+        Ref: TaskRole
+      ContainerDefinitions:
+        - Name: storefront
+          Image: aboutyou/scayle-storefront-demo:1.0.0-rc.8
+          PortMappings:
+            - HostPort: 80
+              Protocol: tcp
+              ContainerPort: 80
+          Environment:
+            - Name: NITRO_PORT
+              Value: 80
+            - Name: NODE_ENV
+              Value: production
+            - Name: NUXT_STOREFRONT_STORAGE_CACHE_HOST
+              Value:
+                Fn::ImportValue: !Sub ${BaseStackName}-ec-primary-endpoint
+            - Name: NUXT_STOREFRONT_STORAGE_SESSION_HOST
+              Value:
+                Fn::ImportValue: !Sub ${BaseStackName}-ec-primary-endpoint # TODO
+            # Set the log level to default
+            - Name: NUXT_PUBLIC_STOREFRONT_LOG_LEVEL
+              Value: info
+          Ulimits:
+            - Name: nofile
+              SoftLimit: 65535
+              HardLimit: 65535
+            - Name: nproc
+              SoftLimit: 65535
+              HardLimit: 65535
+          Secrets:
+            - Name: SERVICE_SECRET
+              ValueFrom:
+                Ref: Secret
+          Essential: true
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: secretsmanager-permissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - 'secretsmanager:GetResourcePolicy'
+                  - 'secretsmanager:GetSecretValue'
+                  - 'secretsmanager:DescribeSecret'
+                  - 'secretsmanager:ListSecretVersionIds'
+                Effect: Allow
+                Resource:
+                  Ref: Secret
+        - PolicyName: cloudwatch-permissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Effect: Allow
+                Resource:
+                  Fn::GetAtt:
+                    - CloudwatchLogsGroup
+                    - Arn
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ssm-permissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - 'ssmmessages:CreateControlChannel'
+                  - 'ssmmessages:CreateDataChannel'
+                  - 'ssmmessages:OpenControlChannel'
+                  - 'ssmmessages:OpenDataChannel'
+                Effect: Allow
+                Resource: '*'
+        - PolicyName: ecs-exec-permissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - 'ecs:ExecuteCommand'
+                Effect: Allow
+                Condition:
+                  StringEquals:
+                    'aws:ResourceTag/service': storefront-boilerplate-service
+                Resource:
+                  Fn::Sub:
+                    - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+                    - cluster_name:
+                        Ref: Cluster
