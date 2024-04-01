@@ -118,7 +118,7 @@ Resources:
         Ref: VpcId # TODO: VPC?
 
   # ElastiCache
-  ElastiCacheService:
+  ElastiCache:
     Type: AWS::ElastiCache::ReplicationGroup
     Properties:
       AutomaticFailoverEnabled: false
@@ -140,7 +140,6 @@ Resources:
       SnapshotWindow: 01:00-02:00
       SnapshottingClusterId:
         Fn::Sub: ${AWS::StackName}-001
-
   ElastiCacheSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup
     Properties:
@@ -179,7 +178,6 @@ Resources:
       TaskDefinition:
         Ref: TaskDefinition
       PropagateTags: SERVICE
-
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -210,10 +208,14 @@ Resources:
               Value: production
             - Name: NUXT_STOREFRONT_STORAGE_CACHE_HOST
               Value:
-                Fn::ImportValue: !Sub ${BaseStackName}-ec-primary-endpoint
+                Fn::GetAtt:
+                  - ElastiCache
+                  - PrimaryEndPoint.Address
             - Name: NUXT_STOREFRONT_STORAGE_SESSION_HOST
               Value:
-                Fn::ImportValue: !Sub ${BaseStackName}-ec-primary-endpoint # TODO
+                Fn::GetAtt:
+                  - ElastiCache
+                  - PrimaryEndPoint.Address
             # Set the log level to default
             - Name: NUXT_PUBLIC_STOREFRONT_LOG_LEVEL
               Value: info
