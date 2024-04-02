@@ -4,9 +4,33 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Storefront Boilerplate ECS Cluster
 
 Parameters:
-  AWSAccountName:
-    Description: The AWS account name
+  Environment:
+    Description: Your SCAYLE Environment name
     Type: String
+
+  StoryblokAccessToken:
+    Type: String
+    Description: Your Storyblok Access Token for your CMS integration
+  
+  StorefrontAPIToken:
+    Type: String
+    Description: Your Token for the Storefront API from SCAYLE
+  
+  AuthClientId:
+    Type: String
+    Description: Your Client ID for the Authentication API from SCAYLE
+
+  AuthClientSecret:
+    Type: String
+    Description: Your Secret for the Authentication API from SCAYLE
+
+  CheckoutSecret:
+    Type: String
+    Description: Your Checkout Secret for your SCAYLE Shop. This needs to be provided through your SCAYLE Contact
+
+  CheckoutToken:
+    Type: String
+    Description: Your Checkout Token for your SCAYLE Shop. This needs to be provided through your SCAYLE Contact
 
 Resources:
   # ECS Cluster
@@ -68,9 +92,23 @@ Resources:
     Properties:
       Name: !Ref AWS::StackName
       Description: 'Storefront Boilerplate Secrets'
-      # TODO: Fill in secrets
-      SecretString: |
-        {}
+      SecretString: 
+        Fn::Sub: |
+          {
+            "NUXT_PUBLIC_CDN_URL": "https://${Environment}.cdn.scayle.cloud/",
+            "NUXT_PUBLIC_LOG_NAME": "storefront-boilerplate",
+            "NUXT_PUBLIC_STORYBLOK_ACCESS_TOKEN": "${StoryblokAccessToken}",
+            "NUXT_STOREFRONT_BAPI_HOST": "https://${Environment}.storefront.api.scayle.cloud/v1/",
+            "NUXT_STOREFRONT_BAPI_TOKEN": "${StorefrontAPIToken}",
+            "NUXT_STOREFRONT_OAUTH_API_HOST": "https://${Environment}.auth.scayle.cloud",
+            "NUXT_STOREFRONT_OAUTH_CLIENT_ID": "${AuthClientId}",
+            "NUXT_STOREFRONT_OAUTH_CLIENT_SECRET": "${AuthClientSecret}",
+            "NUXT_STOREFRONT_REDIRECTS_ENABLED": "true",
+            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_HOST": "https://${Environment}.checkout.api.scayle.cloud",
+            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_SECRET": "${CheckoutSecret}",
+            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_TOKEN": "${CheckoutToken}",
+            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_USER": "1001",
+          }
 
   # Load Balancer Setup
   LoadBalancerListenerSecure:
