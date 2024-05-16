@@ -4,8 +4,8 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Storefront Boilerplate ECS Cluster
 
 Parameters:
-  Environment:
-    Description: Your SCAYLE Environment name
+  TenantSpace:
+    Description: Your SCAYLE Tenant Space
     Type: String
 
   StoryblokAccessToken:
@@ -95,16 +95,16 @@ Resources:
       SecretString: 
         Fn::Sub: |
           {
-            "NUXT_PUBLIC_CDN_URL": "https://${Environment}.cdn.scayle.cloud/",
+            "NUXT_PUBLIC_CDN_URL": "https://${TenantSpace}.cdn.scayle.cloud/",
             "NUXT_PUBLIC_LOG_NAME": "storefront-boilerplate",
             "NUXT_PUBLIC_STORYBLOK_ACCESS_TOKEN": "${StoryblokAccessToken}",
-            "NUXT_STOREFRONT_BAPI_HOST": "https://${Environment}.storefront.api.scayle.cloud/v1/",
+            "NUXT_STOREFRONT_BAPI_HOST": "https://${TenantSpace}.storefront.api.scayle.cloud/v1/",
             "NUXT_STOREFRONT_BAPI_TOKEN": "${StorefrontAPIToken}",
-            "NUXT_STOREFRONT_OAUTH_API_HOST": "https://${Environment}.auth.scayle.cloud",
+            "NUXT_STOREFRONT_OAUTH_API_HOST": "https://${TenantSpace}.auth.scayle.cloud",
             "NUXT_STOREFRONT_OAUTH_CLIENT_ID": "${AuthClientId}",
             "NUXT_STOREFRONT_OAUTH_CLIENT_SECRET": "${AuthClientSecret}",
             "NUXT_STOREFRONT_REDIRECTS_ENABLED": "true",
-            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_HOST": "https://${Environment}.checkout.api.scayle.cloud",
+            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_HOST": "https://${TenantSpace}.checkout.api.scayle.cloud",
             "NUXT_STOREFRONT_STORES_1001_CHECKOUT_SECRET": "${CheckoutSecret}",
             "NUXT_STOREFRONT_STORES_1001_CHECKOUT_TOKEN": "${CheckoutToken}",
             "NUXT_STOREFRONT_STORES_1001_CHECKOUT_USER": "1001",
