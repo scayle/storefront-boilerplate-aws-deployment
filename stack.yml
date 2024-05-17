@@ -1,11 +1,11 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Storefront Boilerplate ECS Cluster
+Description: SCAYLE Storefront Boilerplate ECS Fargate
 
 Parameters:
   TenantSpace:
-    Description: Your SCAYLE Tenant Space
+    Description: Your SCAYLE Tenant Space, e.g. acme-live
     Type: String
 
   StoryblokAccessToken:
