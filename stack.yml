@@ -9,14 +9,17 @@ Parameters:
     Type: String
 
   StoryblokAccessToken:
+    NoEcho: true
     Type: String
     Description: Your Storyblok Access Token for your CMS integration
   
   StorefrontAPIToken:
+    NoEcho: true
     Type: String
     Description: Your Token for the Storefront API from SCAYLE
   
   AuthClientId:
+    NoEcho: true
     Type: String
     Description: Your Client ID for the Authentication API from SCAYLE
 
@@ -25,10 +28,12 @@ Parameters:
     Description: Your Secret for the Authentication API from SCAYLE
 
   CheckoutSecret:
+    NoEcho: true
     Type: String
     Description: Your Checkout Secret for your SCAYLE Shop. This needs to be provided through your SCAYLE Contact
 
   CheckoutToken:
+    NoEcho: true
     Type: String
     Description: Your Checkout Token for your SCAYLE Shop. This needs to be provided through your SCAYLE Contact
 
