@@ -1,40 +1,139 @@
----
-AWSTemplateFormatVersion: '2010-09-09'
-
-Description: Storefront Boilerplate ECS Cluster
+Description: >
+  This template deploys the SCAYLE Storefront application on ECS Fargate
 
 Parameters:
-  TenantSpace:
-    Description: Your SCAYLE Tenant Space
+  Environment:
+    Description: The environment to deploy (dev, staging, prod)
     Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+  # =============================================================================
+  # ECS Configuration
+  # =============================================================================
+
+  Image:
+    Description: Choose the docker image that should be deployed
+    Type: String
+    Default: aboutyou/scayle-storefront-demo:1.0.0-rc.8
+
+  # =============================================================================
+  # SCAYLE Authentication
+  # =============================================================================
+  ScayleAuthClientId:
+    Description: Your Client ID for the Authentication API from SCAYLE
+    NoEcho: true
+    Type: String
+
+  ScayleAuthClientSecret:
+    Description: Your Secret for the Authentication API from SCAYLE
+    NoEcho: true
+    Type: String
+
+  ScayleCheckoutSecret:
+    Description: Your Checkout Secret for your SCAYLE Shop. This needs to be provided through your SCAYLE Contact
+    NoEcho: true
+    Type: String
+
+  ScayleCheckoutToken:
+    Description: Your Checkout Token for your SCAYLE Shop. This needs to be provided through your SCAYLE Contact
+    NoEcho: true
+    Type: String
+
+  ScayleStorefrontAPIToken:
+    Description: Your Token for the Storefront API from SCAYLE
+    NoEcho: true
+    Type: String
+
+  ScayleTenantSpace:
+    Description: Choose your SCAYLE tenant space your storefront should connect to, e.g. acme-live
+    Type: String
+    AllowedPattern: "^[a-z]+(-[a-z]+)*$"
 
   StoryblokAccessToken:
-    Type: String
     Description: Your Storyblok Access Token for your CMS integration
-  
-  StorefrontAPIToken:
+    NoEcho: true
     Type: String
-    Description: Your Token for the Storefront API from SCAYLE
-  
-  AuthClientId:
-    Type: String
-    Description: Your Client ID for the Authentication API from SCAYLE
 
-  AuthClientSecret:
-    Type: String
-    Description: Your Secret for the Authentication API from SCAYLE
+  # =============================================================================
+  # Network
+  # =============================================================================
+  PrivateSubnets:
+    Description: Choose which subnets Service and ElastiCache should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
 
-  CheckoutSecret:
-    Type: String
-    Description: Your Checkout Secret for your SCAYLE Shop. This needs to be provided through your SCAYLE Contact
+  PublicSubnets:
+    Description: Choose which subnets the Load Balancer should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
 
-  CheckoutToken:
-    Type: String
-    Description: Your Checkout Token for your SCAYLE Shop. This needs to be provided through your SCAYLE Contact
+  VPC:
+    Description: Choose which VPC this ECS cluster should be deployed to
+    Type: AWS::EC2::VPC::Id
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "ECS Configuration"
+        Parameters:
+          - Image
+      - Label:
+          default: "SCAYLE Authentication"
+        Parameters:
+          - ScayleAuthClientId
+          - ScayleAuthClientSecret
+          - ScayleCheckoutSecret
+          - ScayleCheckoutToken
+          - ScayleStorefrontAPIToken
+          - StoryblokAccessToken
+      - Label:
+          default: "Network Configuration"
+        Parameters:
+          - PrivateSubnets
+          - PublicSubnets
+          - VPC
+
+Mappings:
+  EnvironmentDefaults:
+    dev:
+      Cpu: 512
+      Memory: 1024
+      CpuTargetValue: 80
+      DesiredCount: 1
+      MaxCapacity: 10
+      MinCapacity: 1
+      CacheNodeType: cache.t4g.small
+      NumCacheClusters: 1
+      AutomaticFailoverEnabled: false
+    staging:
+      Cpu: 512
+      Memory: 1024
+      CpuTargetValue: 80
+      DesiredCount: 1
+      MaxCapacity: 10
+      MinCapacity: 1
+      CacheNodeType: cache.t4g.small
+      NumCacheClusters: 1
+      AutomaticFailoverEnabled: false
+    prod:
+      Cpu: 1024
+      Memory: 2048
+      CpuTargetValue: 40
+      DesiredCount: 2
+      MaxCapacity: 50
+      MinCapacity: 2
+      CacheNodeType: cache.m7g.large
+      NumCacheClusters: 2
+      AutomaticFailoverEnabled: true
 
 Resources:
-  # ECS Cluster
-  Cluster:
+  # =============================================================================
+  # ECS Cluster (Fargate only)
+  # =============================================================================
+  ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Ref AWS::StackName
@@ -42,27 +141,27 @@ Resources:
         - Name: containerInsights
           Value: enabled
 
+  # =============================================================================
   # Security Groups
+  # =============================================================================
   ElastiCacheSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName:
-        Fn::Sub: ${AWS::StackName}-sg-ec
-      GroupDescription: Storefront Boilerplate ElastiCache Security Group
+      GroupName: !Sub ${AWS::StackName}-sg-ec
+      GroupDescription: SCAYLE Storefront ElastiCache Security Group
       SecurityGroupIngress:
         - SourceSecurityGroupId:
             Ref: ServiceSecurityGroup
           IpProtocol: tcp
           FromPort: 6379
           ToPort: 6379
-      VpcId:
-        Ref: VpcId # TODO: VPC???
+      VpcId: !Ref VPC
+
   ServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName:
-        Fn::Sub: ${AWS::StackName}-sg-ecs
-      GroupDescription: Storefront Boilerplate Service Security Group
+      GroupName: !Sub ${AWS::StackName}-sg-ecs
+      GroupDescription: SCAYLE Storefront Service Security Group
       SecurityGroupIngress:
         - Description: Access from the LB to ECS
           IpProtocol: tcp
@@ -70,72 +169,54 @@ Resources:
           ToPort: 80
           SourceSecurityGroupId:
             Ref: LoadBalancerSecurityGroup
-      VpcId:
-        Ref: VpcId # TODO: VPC???
+      VpcId: !Ref VPC
+
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName:
-        Fn::Sub: ${AWS::StackName}-sg-lb
-      GroupDescription: Storefront Boilerplate Load Balancer Security Group
-      VpcId:
-        Ref: VpcId # TODO: VPC???
+      GroupName: !Sub ${AWS::StackName}-sg-lb
+      GroupDescription: SCAYLE Storefront Load Balancer Security Group
+      VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
 
-  # Service Secret
-  Secret:
-    Type: 'AWS::SecretsManager::Secret'
-    Properties:
-      Name: !Ref AWS::StackName
-      Description: 'Storefront Boilerplate Secrets'
-      SecretString: 
-        Fn::Sub: |
-          {
-            "NUXT_PUBLIC_CDN_URL": "https://${TenantSpace}.cdn.scayle.cloud/",
-            "NUXT_PUBLIC_LOG_NAME": "storefront-boilerplate",
-            "NUXT_PUBLIC_STORYBLOK_ACCESS_TOKEN": "${StoryblokAccessToken}",
-            "NUXT_STOREFRONT_BAPI_HOST": "https://${TenantSpace}.storefront.api.scayle.cloud/v1/",
-            "NUXT_STOREFRONT_BAPI_TOKEN": "${StorefrontAPIToken}",
-            "NUXT_STOREFRONT_OAUTH_API_HOST": "https://${TenantSpace}.auth.scayle.cloud",
-            "NUXT_STOREFRONT_OAUTH_CLIENT_ID": "${AuthClientId}",
-            "NUXT_STOREFRONT_OAUTH_CLIENT_SECRET": "${AuthClientSecret}",
-            "NUXT_STOREFRONT_REDIRECTS_ENABLED": "true",
-            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_HOST": "https://${TenantSpace}.checkout.api.scayle.cloud",
-            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_SECRET": "${CheckoutSecret}",
-            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_TOKEN": "${CheckoutToken}",
-            "NUXT_STOREFRONT_STORES_1001_CHECKOUT_USER": "1001",
-          }
-
-  # Load Balancer Setup
-  LoadBalancerListenerSecure:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn:
-            Ref: LoadBalancerTargetGroup
-      LoadBalancerArn:
-        Ref: LoadBalancerService
-      Port: 443
-      Protocol: HTTPS
-  LoadBalancerService:
+  # =============================================================================
+  # Load Balancer
+  # =============================================================================
+  LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name:
-        Ref: AWS::StackName
-      Scheme: internet-facing
+      Name: !Ref AWS::StackName
+      Subnets: !Ref PublicSubnets
       SecurityGroups:
-        - Ref: LoadBalancerSecurityGroup
-      Subnets:
-        Ref: PublicSubnetIds # TODO: Public Subnet ID?
-  LoadBalancerTargetGroup:
+        - !Ref LoadBalancerSecurityGroup
+
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn:
-      - LoadBalancerService
+      - LoadBalancer
     Properties:
       Port: 80
       Protocol: HTTP
@@ -152,89 +233,83 @@ Resources:
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
           Value: 30
-      VpcId:
-        Ref: VpcId # TODO: VPC?
+      VpcId: !Ref VPC
 
+  # =============================================================================
   # ElastiCache
+  # =============================================================================
   ElastiCache:
     Type: AWS::ElastiCache::ReplicationGroup
     Properties:
-      AutomaticFailoverEnabled: false
-      CacheNodeType: cache.t4g.small
-      CacheSubnetGroupName:
-        Ref: ElastiCacheSubnetGroup
+      AutomaticFailoverEnabled: !FindInMap [EnvironmentDefaults, !Ref Environment, AutomaticFailoverEnabled]
+      CacheNodeType: !FindInMap [EnvironmentDefaults, !Ref Environment, CacheNodeType]
+      CacheSubnetGroupName: !Ref ElastiCacheSubnetGroup
       Engine: redis
       EngineVersion: 7.0
-      MultiAZEnabled: false
-      NumCacheClusters: 1
+      MultiAZEnabled: !FindInMap [EnvironmentDefaults, !Ref Environment, AutomaticFailoverEnabled]
+      NumCacheClusters: !FindInMap [EnvironmentDefaults, !Ref Environment, NumCacheClusters]
       PreferredMaintenanceWindow: tue:02:00-tue:04:00
-      ReplicationGroupDescription:
-        Ref: AWS::StackName
-      ReplicationGroupId:
-        Ref: AWS::StackName
+      ReplicationGroupDescription: !Ref AWS::StackName
+      ReplicationGroupId: !Ref AWS::StackName
       SecurityGroupIds:
-        - Ref: ElastiCacheSecurityGroup
+        - !Ref ElastiCacheSecurityGroup
       SnapshotRetentionLimit: 1
       SnapshotWindow: 01:00-02:00
-      SnapshottingClusterId:
-        Fn::Sub: ${AWS::StackName}-001
+      SnapshottingClusterId: !Sub ${AWS::StackName}-001
+
   ElastiCacheSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup
     Properties:
-      Description:
-        Ref: AWS::StackName
-      SubnetIds:
-        Ref: SubnetIds # TODO: Subnet Ids?
+      Description: !Ref AWS::StackName
+      SubnetIds: !Ref PrivateSubnets
 
-  # Service
+  # =============================================================================
+  # ECS Service
+  # =============================================================================
   CloudwatchLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName:
-        Ref: AWS::StackName
+      LogGroupName: !Ref AWS::StackName
       RetentionInDays: 14
-  EcsService:
+
+  Service:
     Type: AWS::ECS::Service
     Properties:
-      Cluster:
-        Ref: Cluster
+      Cluster: !Ref ECSCluster
       LaunchType: FARGATE
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
+      DesiredCount: !FindInMap [EnvironmentDefaults, !Ref Environment, DesiredCount]
+      LoadBalancers:
+        - ContainerName: storefront
+          ContainerPort: 80
+          TargetGroupArn: !Ref TargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           SecurityGroups:
-            - Ref: ServiceSecurityGroup
-          Subnets:
-            Ref: SubnetIds # TODO: Subnet IDs???
-      LoadBalancers:
-        - ContainerName: storefront
-          ContainerPort: '80'
-          TargetGroupArn:
-            Ref: LoadBalancerTargetGroup
-      TaskDefinition:
-        Ref: TaskDefinition
-      PropagateTags: SERVICE
+            - !Ref ServiceSecurityGroup
+          Subnets: !Ref PrivateSubnets
+      Role: !Ref TaskRole
+      TaskDefinition: !Ref TaskDefinition
+
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: !Sub ${AWS::StackName}
+      Family: !Ref AWS::StackName
       RuntimePlatform:
         CpuArchitecture: X86_64
         OperatingSystemFamily: LINUX
-      Cpu: 512
-      Memory: 1024
+      Cpu: !FindInMap [EnvironmentDefaults, !Ref Environment, Cpu]
+      Memory: !FindInMap [EnvironmentDefaults, !Ref Environment, Memory]
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      ExecutionRoleArn:
-        Ref: TaskExecutionRole
-      TaskRoleArn:
-        Ref: TaskRole
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
       ContainerDefinitions:
         - Name: storefront
-          Image: aboutyou/scayle-storefront-demo:1.0.0-rc.8
+          Image: !Ref Image
           PortMappings:
             - HostPort: 80
               Protocol: tcp
@@ -245,16 +320,9 @@ Resources:
             - Name: NODE_ENV
               Value: production
             - Name: NUXT_STOREFRONT_STORAGE_CACHE_HOST
-              Value:
-                Fn::GetAtt:
-                  - ElastiCache
-                  - PrimaryEndPoint.Address
+              Value: !GetAtt ElastiCache.PrimaryEndPoint.Address
             - Name: NUXT_STOREFRONT_STORAGE_SESSION_HOST
-              Value:
-                Fn::GetAtt:
-                  - ElastiCache
-                  - PrimaryEndPoint.Address
-            # Set the log level to default
+              Value: !GetAtt ElastiCache.PrimaryEndPoint.Address
             - Name: NUXT_PUBLIC_STOREFRONT_LOG_LEVEL
               Value: info
           Ulimits:
@@ -266,9 +334,9 @@ Resources:
               HardLimit: 65535
           Secrets:
             - Name: SERVICE_SECRET
-              ValueFrom:
-                Ref: Secret
+              ValueFrom: !Ref Secret
           Essential: true
+
   TaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -282,7 +350,7 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
-        - PolicyName: secretsmanager-permissions
+        - PolicyName: !Join ["-", [ !Ref AWS::StackName, "secretsmanager-permissions"] ]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -292,9 +360,8 @@ Resources:
                   - 'secretsmanager:DescribeSecret'
                   - 'secretsmanager:ListSecretVersionIds'
                 Effect: Allow
-                Resource:
-                  Ref: Secret
-        - PolicyName: cloudwatch-permissions
+                Resource: !Ref Secret
+        - PolicyName: !Join ["-", [ !Ref AWS::StackName, "cloudwatch-permissions"] ]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -302,10 +369,8 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Effect: Allow
-                Resource:
-                  Fn::GetAtt:
-                    - CloudwatchLogsGroup
-                    - Arn
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudwatchLogsGroup}:*"
+
   TaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -337,8 +402,104 @@ Resources:
                 Condition:
                   StringEquals:
                     'aws:ResourceTag/service': storefront-boilerplate-service
-                Resource:
-                  Fn::Sub:
-                    - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
-                    - cluster_name:
-                        Ref: Cluster
+                Resource: !Sub
+                  - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ECSCluster}
+                  - ECSCluster: !Ref ECSCluster
+
+  Secret:
+    Type: 'AWS::SecretsManager::Secret'
+    Properties:
+      Name: !Ref AWS::StackName
+      Description: 'Storefront Boilerplate Secrets'
+      SecretString: !Sub |
+        {
+          "NUXT_PUBLIC_CDN_URL": "https://${ScayleTenantSpace}.cdn.scayle.cloud/",
+          "NUXT_PUBLIC_LOG_NAME": "storefront-boilerplate",
+          "NUXT_PUBLIC_STORYBLOK_ACCESS_TOKEN": "${StoryblokAccessToken}",
+          "NUXT_STOREFRONT_BAPI_HOST": "https://${ScayleTenantSpace}.storefront.api.scayle.cloud/v1/",
+          "NUXT_STOREFRONT_BAPI_TOKEN": "${ScayleStorefrontAPIToken}",
+          "NUXT_STOREFRONT_OAUTH_API_HOST": "https://${ScayleTenantSpace}.auth.scayle.cloud",
+          "NUXT_STOREFRONT_OAUTH_CLIENT_ID": "${ScayleAuthClientId}",
+          "NUXT_STOREFRONT_OAUTH_CLIENT_SECRET": "${ScayleAuthClientSecret}",
+          "NUXT_STOREFRONT_REDIRECTS_ENABLED": "true",
+          "NUXT_STOREFRONT_STORES_1001_CHECKOUT_HOST": "https://${ScayleTenantSpace}.checkout.api.scayle.cloud",
+          "NUXT_STOREFRONT_STORES_1001_CHECKOUT_SECRET": "${ScayleCheckoutSecret}",
+          "NUXT_STOREFRONT_STORES_1001_CHECKOUT_TOKEN": "${ScayleCheckoutToken}",
+          "NUXT_STOREFRONT_STORES_1001_CHECKOUT_USER": "1001",
+        }
+
+  # =============================================================================
+  # Auto Scaling
+  # =============================================================================
+  ECSAutoScalingTarget:
+    DependsOn: Service
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: !FindInMap [EnvironmentDefaults, !Ref Environment, MaxCapacity]
+      MinCapacity: !FindInMap [EnvironmentDefaults, !Ref Environment, MinCapacity]
+      ResourceId: !Sub "service/${ECSCluster}/${Service}"
+      RoleARN: !GetAtt ApplicationAutoScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  ECSAutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-ECSAutoScalingPolicy"
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ECSAutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        TargetValue: !FindInMap [EnvironmentDefaults, !Ref Environment, CpuTargetValue]
+
+  ApplicationAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs.application-autoscaling.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: !Join ["-", [ !Ref AWS::StackName, "autoscaling-permissions"] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - application-autoscaling:*
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:PutMetricAlarm
+                  - ecs:UpdateService
+                  - ecs:DescribeServices
+                  - ecs:DescribeClusters
+                Resource: '*'
+
+Outputs:
+  LoadBalancerDNSName:
+    Description: "DNS name of the load balancer"
+    Value: !GetAtt LoadBalancer.DNSName
+
+  ECSClusterName:
+    Description: "Name of the ECS Cluster"
+    Value: !Ref ECSCluster
+
+  ECSServiceName:
+    Description: "Name of the ECS Service"
+    Value: !Ref Service
+
+  TaskDefinitionARN:
+    Description: "ARN of the ECS Task Definition"
+    Value: !Ref TaskDefinition
+
+  ElastiCachePrimaryEndpoint:
+    Description: "Primary endpoint address of the ElastiCache cluster"
+    Value: !GetAtt ElastiCache.PrimaryEndPoint.Address
+
+  CloudWatchLogGroupName:
+    Description: "Name of the CloudWatch Logs log group"
+    Value: !Ref CloudwatchLogsGroup
