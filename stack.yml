@@ -4,20 +4,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: SCAYLE Storefront Boilerplate ECS Fargate
 
 Parameters:
-  TenantSpace:
-    Description: Your SCAYLE Tenant Space, e.g. acme-live
-    Type: String
-
-  StoryblokAccessToken:
-    Description: Your Storyblok Access Token for your CMS integration
-    NoEcho: true
-    Type: String
-
-  StorefrontAPIToken:
-    Description: Your Token for the Storefront API from SCAYLE
-    NoEcho: true
-    Type: String
-
   AuthClientId:
     Description: Your Client ID for the Authentication API from SCAYLE
     NoEcho: true
@@ -36,6 +22,20 @@ Parameters:
   CheckoutToken:
     Description: Your Checkout Token for your SCAYLE Shop. This needs to be provided through your SCAYLE Contact
     NoEcho: true
+    Type: String
+
+  StorefrontAPIToken:
+    Description: Your Token for the Storefront API from SCAYLE
+    NoEcho: true
+    Type: String
+
+  StoryblokAccessToken:
+    Description: Your Storyblok Access Token for your CMS integration
+    NoEcho: true
+    Type: String
+
+  TenantSpace:
+    Description: Your SCAYLE Tenant Space, e.g. acme-live
     Type: String
 
 Resources:
