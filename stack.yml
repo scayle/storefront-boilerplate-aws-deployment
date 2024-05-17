@@ -2,6 +2,9 @@ Description: >
   This template deploys the SCAYLE Storefront application on ECS Fargate
 
 Parameters:
+  # =============================================================================
+  # Global Configuration
+  # =============================================================================
   Environment:
     Description: The environment to deploy (dev, staging, prod)
     Type: String
@@ -14,7 +17,6 @@ Parameters:
   # =============================================================================
   # ECS Configuration
   # =============================================================================
-
   Image:
     Description: Choose the docker image that should be deployed
     Type: String
@@ -76,6 +78,10 @@ Parameters:
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
+      - Label:
+          default: "Global Configuration"
+        Parameters:
+          - Environment
       - Label:
           default: "ECS Configuration"
         Parameters:
