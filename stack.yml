@@ -210,6 +210,7 @@ Resources:
       SecurityGroups:
         - !Ref LoadBalancerSecurityGroup
 
+  # IMPORTANT: Replace this default listener with one that supports HTTPS (Port 443)
   LoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
