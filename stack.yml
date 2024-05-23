@@ -14,6 +14,11 @@ Parameters:
       - staging
       - prod
 
+  ScayleTenantSpace:
+    Description: Choose your SCAYLE tenant space your storefront should connect to, e.g. acme-live
+    Type: String
+    AllowedPattern: "^[a-z]+(-[a-z]+)*$"
+
   # =============================================================================
   # ECS Configuration
   # =============================================================================
@@ -50,11 +55,6 @@ Parameters:
     NoEcho: true
     Type: String
 
-  ScayleTenantSpace:
-    Description: Choose your SCAYLE tenant space your storefront should connect to, e.g. acme-live
-    Type: String
-    AllowedPattern: "^[a-z]+(-[a-z]+)*$"
-
   StoryblokAccessToken:
     Description: Your Storyblok Access Token for your CMS integration
     NoEcho: true
@@ -82,6 +82,7 @@ Metadata:
           default: "Global Configuration"
         Parameters:
           - Environment
+          - ScayleTenantSpace
       - Label:
           default: "ECS Configuration"
         Parameters:
@@ -279,6 +280,8 @@ Resources:
       RetentionInDays: 14
 
   Service:
+    DependsOn:
+      - ElastiCache
     Type: AWS::ECS::Service
     Properties:
       Cluster: !Ref ECSCluster
@@ -296,7 +299,6 @@ Resources:
           SecurityGroups:
             - !Ref ServiceSecurityGroup
           Subnets: !Ref PrivateSubnets
-      Role: !Ref TaskRole
       TaskDefinition: !Ref TaskDefinition
 
   TaskDefinition:
@@ -320,6 +322,12 @@ Resources:
             - HostPort: 80
               Protocol: tcp
               ContainerPort: 80
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudwatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: !Ref AWS::StackName
           Environment:
             - Name: NITRO_PORT
               Value: 80
@@ -443,7 +451,9 @@ Resources:
     Properties:
       MaxCapacity: !FindInMap [EnvironmentDefaults, !Ref Environment, MaxCapacity]
       MinCapacity: !FindInMap [EnvironmentDefaults, !Ref Environment, MinCapacity]
-      ResourceId: !Sub "service/${ECSCluster}/${Service}"
+      ResourceId: !Sub
+        - service/${ECSCluster}/${ServiceName}
+        - ServiceName: !GetAtt Service.Name
       RoleARN: !GetAtt ApplicationAutoScalingRole.Arn
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
