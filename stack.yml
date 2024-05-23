@@ -439,7 +439,7 @@ Resources:
           "NUXT_STOREFRONT_STORES_1001_CHECKOUT_HOST": "https://${ScayleTenantSpace}.checkout.api.scayle.cloud",
           "NUXT_STOREFRONT_STORES_1001_CHECKOUT_SECRET": "${ScayleCheckoutSecret}",
           "NUXT_STOREFRONT_STORES_1001_CHECKOUT_TOKEN": "${ScayleCheckoutToken}",
-          "NUXT_STOREFRONT_STORES_1001_CHECKOUT_USER": "1001",
+          "NUXT_STOREFRONT_STORES_1001_CHECKOUT_USER": "1001"
         }
 
   # =============================================================================
