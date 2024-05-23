@@ -430,6 +430,7 @@ Resources:
           "NUXT_PUBLIC_CDN_URL": "https://${ScayleTenantSpace}.cdn.scayle.cloud/",
           "NUXT_PUBLIC_LOG_NAME": "storefront-boilerplate",
           "NUXT_PUBLIC_CMS_ACCESS_TOKEN": "${StoryblokAccessToken}",
+          "NUXT_PUBLIC_STORYBLOK_ACCESS_TOKEN": "${StoryblokAccessToken}",
           "NUXT_STOREFRONT_BAPI_HOST": "https://${ScayleTenantSpace}.storefront.api.scayle.cloud/v1/",
           "NUXT_STOREFRONT_BAPI_TOKEN": "${ScayleStorefrontAPIToken}",
           "NUXT_STOREFRONT_OAUTH_API_HOST": "https://${ScayleTenantSpace}.auth.scayle.cloud",
@@ -439,7 +440,8 @@ Resources:
           "NUXT_STOREFRONT_STORES_1001_CHECKOUT_HOST": "https://${ScayleTenantSpace}.checkout.api.scayle.cloud",
           "NUXT_STOREFRONT_STORES_1001_CHECKOUT_SECRET": "${ScayleCheckoutSecret}",
           "NUXT_STOREFRONT_STORES_1001_CHECKOUT_TOKEN": "${ScayleCheckoutToken}",
-          "NUXT_STOREFRONT_STORES_1001_CHECKOUT_USER": "1001"
+          "NUXT_STOREFRONT_STORES_1001_CHECKOUT_USER": "1001",
+          "NUXT_PUBLIC_GTM_ID": "GTM-123"
         }
 
   # =============================================================================
