@@ -61,7 +61,7 @@ Parameters:
     Type: String
 
   # =============================================================================
-  # Network
+  # Network Configuration
   # =============================================================================
   PrivateSubnets:
     Description: Choose which subnets Service and ElastiCache should be deployed to
