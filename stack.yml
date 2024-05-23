@@ -429,7 +429,7 @@ Resources:
         {
           "NUXT_PUBLIC_CDN_URL": "https://${ScayleTenantSpace}.cdn.scayle.cloud/",
           "NUXT_PUBLIC_LOG_NAME": "storefront-boilerplate",
-          "NUXT_PUBLIC_STORYBLOK_ACCESS_TOKEN": "${StoryblokAccessToken}",
+          "NUXT_PUBLIC_CMS_ACCESS_TOKEN": "${StoryblokAccessToken}",
           "NUXT_STOREFRONT_BAPI_HOST": "https://${ScayleTenantSpace}.storefront.api.scayle.cloud/v1/",
           "NUXT_STOREFRONT_BAPI_TOKEN": "${ScayleStorefrontAPIToken}",
           "NUXT_STOREFRONT_OAUTH_API_HOST": "https://${ScayleTenantSpace}.auth.scayle.cloud",
