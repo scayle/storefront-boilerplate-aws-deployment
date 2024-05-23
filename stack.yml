@@ -132,7 +132,7 @@ Mappings:
       DesiredCount: 2
       MaxCapacity: 50
       MinCapacity: 2
-      CacheNodeType: cache.m7g.large
+      CacheNodeType: cache.m6g.large
       NumCacheClusters: 2
       AutomaticFailoverEnabled: true
 
