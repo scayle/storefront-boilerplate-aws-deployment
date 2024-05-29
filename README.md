@@ -23,7 +23,7 @@ Before deploying the template, ensure you have:
 
 - **Image**: Docker image to deploy.
     - Type: String
-    - Default: `aboutyou/scayle-storefront-demo:1.0.0-rc.8`
+    - Default: `aboutyou/scayle-storefront-demo:1.0.0-storyblok`
 
 ### SCAYLE Authentication
 
