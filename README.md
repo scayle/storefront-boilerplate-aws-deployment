@@ -19,6 +19,10 @@ Before deploying the template, ensure you have:
     - Default: dev
     - Allowed Values: dev, staging, prod
 
+- **ScayleTenantSpace**: SCAYLE tenant space your storefront should connect to, e.g., acme-live.
+    - Type: String
+    - Allowed Pattern: `^[a-z]+(-[a-z]+)*$`
+
 ### ECS Configuration
 
 - **Image**: Docker image to deploy.
@@ -46,10 +50,6 @@ Before deploying the template, ensure you have:
 - **ScayleStorefrontAPIToken**: Your Token for the Storefront API from SCAYLE.
     - Type: String
     - NoEcho: true
-
-- **ScayleTenantSpace**: SCAYLE tenant space your storefront should connect to, e.g., acme-live.
-    - Type: String
-    - Allowed Pattern: `^[a-z]+(-[a-z]+)*$`
 
 - **StoryblokAccessToken**: Your Storyblok Access Token for your CMS integration.
     - Type: String
