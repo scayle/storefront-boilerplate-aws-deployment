@@ -210,6 +210,7 @@ Resources:
       SecurityGroups:
         - !Ref LoadBalancerSecurityGroup
 
+  # IMPORTANT: Replace this default listener with one that supports HTTPS (Port 443)
   LoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -248,13 +249,13 @@ Resources:
   ElastiCache:
     Type: AWS::ElastiCache::ReplicationGroup
     Properties:
-      AutomaticFailoverEnabled: !FindInMap [EnvironmentDefaults, !Ref Environment, AutomaticFailoverEnabled]
-      CacheNodeType: !FindInMap [EnvironmentDefaults, !Ref Environment, CacheNodeType]
+      AutomaticFailoverEnabled: !FindInMap [ EnvironmentDefaults, !Ref Environment, AutomaticFailoverEnabled ]
+      CacheNodeType: !FindInMap [ EnvironmentDefaults, !Ref Environment, CacheNodeType ]
       CacheSubnetGroupName: !Ref ElastiCacheSubnetGroup
       Engine: redis
       EngineVersion: 7.0
-      MultiAZEnabled: !FindInMap [EnvironmentDefaults, !Ref Environment, AutomaticFailoverEnabled]
-      NumCacheClusters: !FindInMap [EnvironmentDefaults, !Ref Environment, NumCacheClusters]
+      MultiAZEnabled: !FindInMap [ EnvironmentDefaults, !Ref Environment, AutomaticFailoverEnabled ]
+      NumCacheClusters: !FindInMap [ EnvironmentDefaults, !Ref Environment, NumCacheClusters ]
       PreferredMaintenanceWindow: tue:02:00-tue:04:00
       ReplicationGroupDescription: !Ref AWS::StackName
       ReplicationGroupId: !Ref AWS::StackName
@@ -289,7 +290,7 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
-      DesiredCount: !FindInMap [EnvironmentDefaults, !Ref Environment, DesiredCount]
+      DesiredCount: !FindInMap [ EnvironmentDefaults, !Ref Environment, DesiredCount ]
       LoadBalancers:
         - ContainerName: storefront
           ContainerPort: 80
@@ -308,8 +309,8 @@ Resources:
       RuntimePlatform:
         CpuArchitecture: X86_64
         OperatingSystemFamily: LINUX
-      Cpu: !FindInMap [EnvironmentDefaults, !Ref Environment, Cpu]
-      Memory: !FindInMap [EnvironmentDefaults, !Ref Environment, Memory]
+      Cpu: !FindInMap [ EnvironmentDefaults, !Ref Environment, Cpu ]
+      Memory: !FindInMap [ EnvironmentDefaults, !Ref Environment, Memory ]
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -364,7 +365,7 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
-        - PolicyName: !Join ["-", [ !Ref AWS::StackName, "secretsmanager-permissions"] ]
+        - PolicyName: !Join [ "-", [ !Ref AWS::StackName, "secretsmanager-permissions" ] ]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -375,7 +376,7 @@ Resources:
                   - 'secretsmanager:ListSecretVersionIds'
                 Effect: Allow
                 Resource: !Ref Secret
-        - PolicyName: !Join ["-", [ !Ref AWS::StackName, "cloudwatch-permissions"] ]
+        - PolicyName: !Join [ "-", [ !Ref AWS::StackName, "cloudwatch-permissions" ] ]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -451,8 +452,8 @@ Resources:
     DependsOn: Service
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
-      MaxCapacity: !FindInMap [EnvironmentDefaults, !Ref Environment, MaxCapacity]
-      MinCapacity: !FindInMap [EnvironmentDefaults, !Ref Environment, MinCapacity]
+      MaxCapacity: !FindInMap [ EnvironmentDefaults, !Ref Environment, MaxCapacity ]
+      MinCapacity: !FindInMap [ EnvironmentDefaults, !Ref Environment, MinCapacity ]
       ResourceId: !Sub
         - service/${ECSCluster}/${ServiceName}
         - ServiceName: !GetAtt Service.Name
@@ -469,7 +470,7 @@ Resources:
       TargetTrackingScalingPolicyConfiguration:
         PredefinedMetricSpecification:
           PredefinedMetricType: ECSServiceAverageCPUUtilization
-        TargetValue: !FindInMap [EnvironmentDefaults, !Ref Environment, CpuTargetValue]
+        TargetValue: !FindInMap [ EnvironmentDefaults, !Ref Environment, CpuTargetValue ]
 
   ApplicationAutoScalingRole:
     Type: AWS::IAM::Role
@@ -483,7 +484,7 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: !Join ["-", [ !Ref AWS::StackName, "autoscaling-permissions"] ]
+        - PolicyName: !Join [ "-", [ !Ref AWS::StackName, "autoscaling-permissions" ] ]
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
