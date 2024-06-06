@@ -1,6 +1,20 @@
-# SCAYLE Storefront ECS Fargate Deployment
+![scayle-logo-cr](https://cdn-prod.scayle.com/public/media/general/SCAYLE-Commerce-Engine-header.png)
 
-This repository contains an AWS CloudFormation template to deploy the SCAYLE Storefront application on Amazon ECS using Fargate. The deployment includes an ECS cluster, task definitions, services, a load balancer, ElastiCache, IAM roles, and auto-scaling configurations.
+<h1 align="center">
+  SCAYLE Storefront ECS Fargate Deployment
+</h1>
+
+<h4 align="center">
+  <a href="https://new.scayle.dev">Documentation</a> |
+  <a href="https://www.scayle.com/">Website</a>
+</h4>
+
+<p align="center">
+  This repository contains an AWS CloudFormation template to deploy the SCAYLE Storefront application on Amazon ECS using Fargate. The deployment includes an ECS cluster, task definitions, services, a load balancer, ElastiCache, IAM roles, and auto-scaling configurations.
+</p>
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="SCAYLE's **Storefront API PHP SDK is released under the MIT license." /></a>
+</p>
 
 ## Prerequisites
 
