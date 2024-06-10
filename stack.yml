@@ -25,7 +25,7 @@ Parameters:
   Image:
     Description: Choose the docker image that should be deployed
     Type: String
-    Default: aboutyou/scayle-storefront-demo:1.0.0-storyblok
+    Default: scayle/storefront-boilerplate:1.0.0-storyblok
 
   # =============================================================================
   # SCAYLE Authentication
